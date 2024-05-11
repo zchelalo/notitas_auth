@@ -33,9 +33,21 @@ router.post('/', async (req, res, next) => {
   try {
     const usuarios = await service.find()
     if (usuarios.length === 0) {
+      req.customData = {
+        noUsers: true
+      }
       next()
     } else {
       passport.authenticate('jwt', { session: false })(req, res, next)
+    }
+  } catch (e) {
+    next(e)
+  }
+}, async (req, res, next) => {
+  try {
+    if (req.customData && req.customData.noUsers) {
+      next()
+    } else {
       checkRoles('admin')(req, res, next)
     }
   } catch (e) {

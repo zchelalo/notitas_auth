@@ -47,6 +47,7 @@ class UsuarioService {
       profilePic: imageUrl // Guardar la ruta del archivo en la base de datos
     })
     delete newUsuario.dataValues.password
+    delete newUsuario.dataValues.recoveryToken
 
     return newUsuario
   }
