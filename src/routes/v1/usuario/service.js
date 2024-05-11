@@ -2,6 +2,7 @@ import boom from '@hapi/boom'
 import { v4 as uuidv4 } from 'uuid'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import fs from 'fs/promises'
 
 import { sequelize } from '../../../libs/sequelize.js'
 
@@ -34,7 +35,7 @@ class UsuarioService {
       try {
         // Guardar el archivo en el servidor
         await profilePic.mv(filePath)
-        const reqUrl = data.reqUrl // Suponiendo que tienes acceso a la URL de la solicitud
+        const reqUrl = data.reqUrl
         imageUrl = new URL(path.join('notitas_auth', 'public', 'images', 'pfp', fileName), reqUrl).toString()
       } catch (error) {
         throw boom.internal('Error al guardar la imagen')
@@ -53,7 +54,13 @@ class UsuarioService {
   async find() {
     const response = await UsuarioModel.findAll({
       // attributes: ['id', 'email', 'role', 'createdAt']
-      include: 'tipoUsuario',
+      include: [
+        {
+          model: TipoUsuarioModel,
+          as: 'tipoUsuario',
+          attributes: ['id', 'clave']
+        }
+      ],
       attributes: { exclude: ['password', 'recoveryToken'] }
     })
     return response
@@ -95,12 +102,60 @@ class UsuarioService {
 
   async update(id, changes) {
     const usuario = await this.findOne(id)
-    const response = await usuario.update(changes)
+
+    let imageUrl = undefined
+
+    if (usuario.profilePic) {
+      imageUrl = usuario.profilePic
+    }
+
+    if (changes.profilePic) {
+      const profilePic = changes.profilePic
+      if (!profilePic.mimetype.startsWith('image/')) {
+        throw boom.badRequest('Se requiere una imagen válida')
+      }
+  
+      // Generar un nombre único para la imagen
+      const __dirname = path.dirname(fileURLToPath(import.meta.url))
+      const fileName = `${uuidv4()}${path.extname(profilePic.name)}`
+      const filePath = path.join(__dirname, '../../../', 'public', 'images', 'pfp', fileName) // Ruta donde se guardará el archivo
+
+      try {
+        // Guardar el archivo en el servidor
+        await profilePic.mv(filePath)
+
+        if (usuario.profilePic) {
+          // Eliminar la imagen anterior
+          const oldFilePath = path.join(__dirname, '../../../', 'public', 'images', 'pfp', path.basename(new URL(usuario.profilePic).pathname))
+          console.log(oldFilePath)
+          await fs.unlink(oldFilePath)
+        }
+
+        const reqUrl = changes.reqUrl
+        imageUrl = new URL(path.join('notitas_auth', 'public', 'images', 'pfp', fileName), reqUrl).toString()
+      } catch (error) {
+        throw boom.internal('Error al guardar la imagen', error)
+      }
+    }
+
+    const response = await usuario.update({
+      ...changes,
+      profilePic: imageUrl // Guardar la ruta del archivo en la base de datos
+    })
     return response
   }
 
   async delete(id) {
     const usuario = await this.findOne(id)
+
+    if (usuario.profilePic) {
+      // Eliminar la imagen anterior
+      const __dirname = path.dirname(fileURLToPath(import.meta.url))
+      const oldFilePath = path.join(__dirname, '../../../', 'public', 'images', 'pfp', path.basename(new URL(usuario.profilePic).pathname))
+      console.log(oldFilePath)
+      await fs.unlink(oldFilePath)
+    }
+
     await usuario.destroy()
     return { id }
   }

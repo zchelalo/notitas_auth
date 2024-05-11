@@ -61,6 +61,12 @@ router.patch('/:id', passport.authenticate('jwt', { session: false }), checkRole
   try {
     const { id } = req.params
     const body = req.body
+    if (req.files) {
+      // Aquí obtienes la URL de la solicitud
+      const reqUrl = req.protocol + '://' + req.get('host')
+      body.profilePic = req.files.profilePic
+      body.reqUrl = reqUrl
+    }
     const usuario = await service.update(id, body)
     res.json(usuario)
   } catch (error) {
