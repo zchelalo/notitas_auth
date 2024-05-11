@@ -49,6 +49,7 @@ services:
     image: adminer
     environment:
       TZ: America/Hermosillo
+      ADMINER_DESIGN: "ng9"
     ports:
       - 8080:8080
     depends_on:
