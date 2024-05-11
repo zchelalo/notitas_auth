@@ -11,7 +11,7 @@ const config = {
   PG_PASS: process.env.PG_PASS || '',
   PG_DB: process.env.PG_DB || 'db',
   API_KEY: process.env.API_KEY || 'myapikey',
-  JWT_SECRET: process.env.JWT_SECRET || 'mysecret',
+  JWKS_URI: process.env.JWKS_URI || 'http://localhost:3000/public/.well-known/jwks.json',
   JWT_RECOVERY_SECRET: process.env.JWT_RECOVERY_SECRET || 'myrecoverysecret',
   API_KEY_ENCRYPTION_PASSWORD: process.env.API_KEY_ENCRYPTION_PASSWORD || 'myencryptionpassword',
   EMAIL_SERVER: process.env.EMAIL_SERVER,
