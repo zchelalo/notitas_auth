@@ -53,6 +53,10 @@ class UsuarioService {
   }
 
   async find() {
+    let filtros = {
+      disabled: false
+    }
+
     const response = await UsuarioModel.findAll({
       // attributes: ['id', 'email', 'role', 'createdAt']
       include: [
@@ -62,13 +66,19 @@ class UsuarioService {
           attributes: ['id', 'clave']
         }
       ],
-      attributes: { exclude: ['password', 'recoveryToken'] }
+      attributes: { exclude: ['password', 'recoveryToken'] },
+      where: filtros
     })
     return response
   }
 
   async findOne(id) {
-    const usuario = await UsuarioModel.findByPk(id, {
+    let filtros = {
+      id,
+      disabled: false
+    }
+
+    const usuario = await UsuarioModel.findOne({
       include: [
         {
           model: TipoUsuarioModel,
@@ -76,7 +86,8 @@ class UsuarioService {
           attributes: ['id', 'clave']
         }
       ],
-      attributes: { exclude: ['password', 'recoveryToken'] }
+      attributes: { exclude: ['password', 'recoveryToken'] },
+      where: filtros
     })
     if (!usuario){
       throw boom.notFound('Usuario no encontrado')
@@ -85,8 +96,14 @@ class UsuarioService {
   }
 
   async findOneWithRecovery(id) {
-    const usuario = await UsuarioModel.findByPk(id, {
-      attributes: { exclude: ['password'] }
+    let filtros = {
+      id,
+      disabled: false
+    }
+
+    const usuario = await UsuarioModel.findOne({
+      attributes: { exclude: ['password'] },
+      where: filtros
     })
     if (!usuario){
       throw boom.notFound('Usuario no encontrado')
@@ -95,8 +112,13 @@ class UsuarioService {
   }
 
   async findOneByCorreo(correo) {
+    let filtros = {
+      correo,
+      disabled: false
+    }
+
     const usuario = await UsuarioModel.findOne({
-      where: { correo }
+      where: filtros
     })
     return usuario
   }
@@ -157,7 +179,10 @@ class UsuarioService {
       await fs.unlink(oldFilePath)
     }
 
-    await usuario.destroy()
+    // await usuario.destroy()
+    await usuario.update({
+      disabled: true
+    })
     return { id }
   }
 }

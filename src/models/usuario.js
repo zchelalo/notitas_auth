@@ -38,6 +38,11 @@ const UsuarioSchema = {
     type: DataTypes.INTEGER,
     field: 'tipo_usuario_id'
   },
+  disabled: {
+    allowNull: false,
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
   createdAt: {
     allowNull: false,
     type: DataTypes.DATE,
