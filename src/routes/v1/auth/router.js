@@ -1,7 +1,7 @@
 import express from 'express'
 import passport from 'passport'
 import { validatorHandler } from '../../../middlewares/validator.handler.js'
-import { loginSchema, recoverySchema, changePasswordSchema } from './schema.js'
+import { loginSchema, registroSchema, recoverySchema, changePasswordSchema } from './schema.js'
 import { AuthService } from './service.js'
 import { CorreoService } from '../../../services/correo.js'
 
@@ -14,6 +14,19 @@ router.post('/login', validatorHandler(loginSchema, 'body'), passport.authentica
     const token = await service.signToken(req.user)
 
     res.json(token)
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/registro', validatorHandler(registroSchema, 'body'), async (req, res, next) => {
+  try {
+    const { nombre, correo, password } = req.body
+    const usuario = await service.registroUsuario(nombre, correo, password)
+
+    const token = await service.signToken(usuario)
+
+    res.status(201).json(token)
   } catch (error) {
     next(error)
   }

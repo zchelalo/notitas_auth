@@ -47,6 +47,19 @@ class AuthService {
     return { token, nombre: usuario.nombre }
   }
 
+  async registroUsuario(nombre, correo, password){
+    const usuario = await service.findOneByCorreo(correo)
+
+    if (usuario) {
+      throw boom.badRequest('El correo ya está registrado')
+    }
+
+    const tipoUsuario = await tipoUsuarioService.findOneByClave('cliente')
+
+    const usuarioCreado = await service.create({ nombre, correo, password, tipoUsuarioId: tipoUsuario.id })
+    return usuarioCreado
+  }
+
   async changePassword(token, newPassword){
     try {
       const payload = jwt.verify(token, config.JWT_RECOVERY_SECRET)

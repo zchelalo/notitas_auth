@@ -25,6 +25,14 @@ class TipoUsuarioService {
     return tipoUsuario
   }
 
+  async findOneByClave(clave) {
+    const tipoUsuario = await TipoUsuarioModel.findOne({ where: { clave } })
+    if (!tipoUsuario){
+      throw boom.notFound('Tipo usuario no encontrado')
+    }
+    return tipoUsuario
+  }
+
   async update(id, changes) {
     const tipoUsuario = await this.findOne(id)
     const response = await tipoUsuario.update(changes)
