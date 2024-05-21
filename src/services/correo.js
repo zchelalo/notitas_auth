@@ -11,7 +11,7 @@ class CorreoService {
   constructor(){}
 
   async sendRecovery(correo){
-    const usuario = await service.findByCorreo(correo)
+    const usuario = await service.findOneByCorreo(correo)
 
     if (!usuario){
       throw boom.unauthorized()
@@ -38,7 +38,7 @@ class CorreoService {
     const transporter = nodemailer.createTransport({
       host: config.EMAIL_SERVER,
       port: config.EMAIL_PORT,
-      secure: config.EMAIL_SECURE,
+      secure: config.EMAIL_SECURE === 'true' ? true : false,
       auth: {
         user: config.EMAIL_USER,
         pass: config.EMAIL_PASS
