@@ -1,6 +1,9 @@
 import boom from '@hapi/boom'
 import jwt from 'jsonwebtoken'
 import nodemailer from 'nodemailer'
+import { fileURLToPath } from 'url'
+import path from 'path'
+import fs from 'fs/promises'
 
 import { config } from '../config/config.js'
 import { UsuarioService } from '../routes/v1/usuario/service.js'
@@ -17,11 +20,17 @@ class CorreoService {
       throw boom.unauthorized()
     }
 
-    const payload = { sub: usuario.id }
-    const token = jwt.sign(payload, config.JWT_RECOVERY_SECRET, { expiresIn: '10m' })
-    const link = `http://myfrontend.com/recuperar?${token}`
+    const recoveryPayload = { sub: usuario.id }
 
-    const usuarioUpdated = await service.update(usuario.id, { recoveryToken: token })
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+    const recoveryPem = path.join(__dirname, '../../certs/private_recovery.pem')
+    const recoverySecret = await fs.readFile(recoveryPem, 'utf-8')
+    const recoveryToken = jwt.sign(recoveryPayload, recoverySecret, { expiresIn: '10m', algorithm: 'RS256'})
+
+    const link = `http://myfrontend.com/recuperar?${recoveryToken}`
+
+    await service.update(usuario.id, { recoveryToken })
 
     let info = {
       from: `"Aplicación" <${config.EMAIL_USER}>`, // sender address

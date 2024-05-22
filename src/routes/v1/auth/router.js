@@ -2,6 +2,7 @@ import express from 'express'
 import passport from 'passport'
 import boom from '@hapi/boom'
 
+import { config } from '../../../config/config.js'
 import { validatorHandler } from '../../../middlewares/validator.handler.js'
 import { loginSchema, registroSchema, recoverySchema, changePasswordSchema } from './schema.js'
 import { AuthService } from './service.js'
@@ -15,12 +16,12 @@ router.post('/login', validatorHandler(loginSchema, 'body'), passport.authentica
   try {
     const data = await service.signToken(req.user)
 
-    const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    const expires = new Date(Date.now() + parseInt(config.VENCIMIENTO_REFRESH_TOKEN_DIAS) * 24 * 60 * 60 * 1000)
     res.cookie('refreshToken', data.refreshToken, {
       httpOnly: true,
       secure: false,
       sameSite: 'Strict',
-      expires: oneMonthFromNow
+      expires: expires
     })
 
     res.json({
@@ -40,6 +41,16 @@ router.post('/refresh', async (req, res, next) => {
     }
 
     const data = await service.refreshToken(refreshToken)
+
+    if (data.refreshToken) {
+      const expires = new Date(Date.now() + parseInt(config.VENCIMIENTO_REFRESH_TOKEN_DIAS) * 24 * 60 * 60 * 1000)
+      res.cookie('refreshToken', data.refreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'Strict',
+        expires: expires
+      })
+    }
     
     res.json({
       token: data.accessToken,

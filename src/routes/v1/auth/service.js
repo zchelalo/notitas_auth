@@ -47,16 +47,16 @@ class AuthService {
 
     const accessPem = path.join(__dirname, '../../../../certs/private_access.pem')
     const accessSecret = await fs.readFile(accessPem, 'utf-8')
-    const accessToken = jwt.sign(accessPayload, accessSecret, { expiresIn: '15m', algorithm: 'RS256'})
+    const accessToken = jwt.sign(accessPayload, accessSecret, { expiresIn: `${config.VENCIMIENTO_ACCESS_TOKEN_MINUTOS}m`, algorithm: 'RS256'})
 
     const refreshPem = path.join(__dirname, '../../../../certs/private_refresh.pem')
     const refreshSecret = await fs.readFile(refreshPem, 'utf-8')
-    const refreshToken = jwt.sign(refreshPayload, refreshSecret, { expiresIn: '30d', algorithm: 'RS256'})
+    const refreshToken = jwt.sign(refreshPayload, refreshSecret, { expiresIn: `${config.VENCIMIENTO_REFRESH_TOKEN_DIAS}d`, algorithm: 'RS256'})
 
     return { accessToken, refreshToken, nombre: usuario.nombre }
   }
 
-  async refreshToken(refreshToken) {
+  async refreshToken(token) {
     try {
       const client = jwksClient({
         jwksUri: config.JWKS_REFRESH_URI,
@@ -65,11 +65,31 @@ class AuthService {
         timeout: 30000 // Defaults to 30s
       })
 
+      const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
       const key = await client.getSigningKey()
 
-      const refreshPayload = jwt.verify(refreshToken, key.getPublicKey())
+      const refreshDedoded = jwt.verify(token, key.getPublicKey())
 
-      const usuario = await service.findOne(refreshPayload.sub)
+      const tiempoExpiracion = refreshDedoded.exp * 1000 // Convertir a milisegundos
+      const tiempoActual = Date.now()
+      const tiempoRestante = tiempoExpiracion - tiempoActual
+      const tiempoRestanteDias = tiempoRestante / (1000 * 60 * 60 * 24)
+
+      let refreshToken = undefined
+
+      const usuario = await service.findOne(refreshDedoded.sub)
+
+      if (tiempoRestanteDias <= (parseInt(config.VENCIMIENTO_REFRESH_TOKEN_DIAS) / 2)){
+        const refreshPayload = {
+          sub: usuario.id
+        }
+
+        const refreshPem = path.join(__dirname, '../../../../certs/private_refresh.pem')
+        const refreshSecret = await fs.readFile(refreshPem, 'utf-8')
+        refreshToken = jwt.sign(refreshPayload, refreshSecret, { expiresIn: `${config.VENCIMIENTO_REFRESH_TOKEN_DIAS}d`, algorithm: 'RS256'})
+      }
+
       const tipoUsuario = await tipoUsuarioService.findOne(usuario.tipoUsuarioId)
 
       const accessPayload = {
@@ -77,13 +97,11 @@ class AuthService {
         rol: tipoUsuario.clave
       }
 
-      const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
       const accessPem = path.join(__dirname, '../../../../certs/private_access.pem')
       const accessSecret = await fs.readFile(accessPem, 'utf-8')
-      const accessToken = jwt.sign(accessPayload, accessSecret, { expiresIn: '15m', algorithm: 'RS256'})
+      const accessToken = jwt.sign(accessPayload, accessSecret, { expiresIn: `${config.VENCIMIENTO_ACCESS_TOKEN_MINUTOS}m`, algorithm: 'RS256'})
 
-      return { accessToken, nombre: usuario.nombre }
+      return { refreshToken, accessToken, nombre: usuario.nombre }
     } catch (error) {
       throw boom.unauthorized(error.message)
     }
@@ -104,8 +122,18 @@ class AuthService {
 
   async changePassword(token, newPassword){
     try {
-      const payload = jwt.verify(token, config.JWT_RECOVERY_SECRET)
-      const usuario = await service.findOneWithRecovery(payload.sub)
+      const client = jwksClient({
+        jwksUri: config.JWKS_RECOVERY_URI,
+        cache: true,
+        rateLimit: true,
+        timeout: 30000 // Defaults to 30s
+      })
+
+      const key = await client.getSigningKey()
+
+      const recoveryPayload = jwt.verify(token, key.getPublicKey())
+
+      const usuario = await service.findOneWithRecovery(recoveryPayload.sub)
       if (usuario.recoveryToken !== token){
         throw boom.unauthorized()
       }
