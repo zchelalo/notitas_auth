@@ -61,13 +61,17 @@ router.post('/refresh', async (req, res, next) => {
   }
 })
 
-router.post('/logout', (req, res) => {
-  res.clearCookie('refreshToken', {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'Strict'
-  })
-  res.status(200).send({ message: 'Cierre de sesión completo' })
+router.post('/logout', (req, res, next) => {
+  try {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Strict'
+    })
+    res.status(200).send({ message: 'Cierre de sesión completo' })
+  } catch (error) {
+    next(error)
+  }
 })
 
 router.post('/registro', validatorHandler(registroSchema, 'body'), async (req, res, next) => {
