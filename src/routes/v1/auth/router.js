@@ -1,5 +1,7 @@
 import express from 'express'
 import passport from 'passport'
+import boom from '@hapi/boom'
+
 import { validatorHandler } from '../../../middlewares/validator.handler.js'
 import { loginSchema, registroSchema, recoverySchema, changePasswordSchema } from './schema.js'
 import { AuthService } from './service.js'
@@ -11,9 +13,38 @@ const correoService = new CorreoService()
 
 router.post('/login', validatorHandler(loginSchema, 'body'), passport.authenticate('local', { session: false }), async (req, res, next) => {
   try {
-    const token = await service.signToken(req.user)
+    const data = await service.signToken(req.user)
 
-    res.json(token)
+    const oneMonthFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Strict',
+      expires: oneMonthFromNow
+    })
+
+    res.json({
+      token: data.accessToken,
+      nombre: data.nombre
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies.refreshToken
+    if (!refreshToken) {
+      throw boom.forbidden('No se envió el refresh token')
+    }
+
+    const data = await service.refreshToken(refreshToken)
+    
+    res.json({
+      token: data.accessToken,
+      nombre: data.nombre
+    })
   } catch (error) {
     next(error)
   }

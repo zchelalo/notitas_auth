@@ -196,7 +196,9 @@ $RECYCLE.BIN/
 
 DB
 flyway.conf
-private.pem
-public.pem
+certs/*
+!certs/.gitkeep
 src/public/images/pfp/*
 !src/public/images/pfp/.gitkeep
+src/public/.well-known/*
+!src/public/.well-known/.gitkeep

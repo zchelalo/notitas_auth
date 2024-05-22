@@ -5,7 +5,7 @@ import { config } from '../../../config/config.js'
 const options = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKeyProvider: jwksClient.passportJwtSecret({
-    jwksUri: config.JWKS_URI,
+    jwksUri: config.JWKS_ACCESS_URI,
     cache: true,
     rateLimit: true,
     timeout: 30000 // Defaults to 30s

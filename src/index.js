@@ -3,6 +3,7 @@ import cors from 'cors'
 import fileUpload from 'express-fileupload'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import cookieParser from 'cookie-parser'
 
 import { config } from "./config/config.js"
 import { routerApi } from './routes/index.js'
@@ -15,6 +16,7 @@ const app = express()
 const port = config.PORT
 
 app.use(express.json())
+app.use(cookieParser())
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
