@@ -33,7 +33,7 @@ class AuthService {
     return usuario
   }
 
-  async signToken(usuario){
+  async signToken(usuario) {
     const tipoUsuario = await tipoUsuarioService.findOne(usuario.tipoUsuarioId)
     const accessPayload = {
       sub: usuario.id,
@@ -107,7 +107,7 @@ class AuthService {
     }
   }
 
-  async registroUsuario(nombre, correo, password){
+  async registroUsuario(nombre, correo, password) {
     const usuario = await service.findOneByCorreo(correo)
 
     if (usuario) {
@@ -120,7 +120,50 @@ class AuthService {
     return usuarioCreado
   }
 
-  async changePassword(token, newPassword){
+  async sendRecovery(correo) {
+    const usuario = await service.findOneByCorreo(correo)
+
+    if (!usuario){
+      throw boom.unauthorized()
+    }
+
+    const recoveryPayload = { sub: usuario.id }
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+    const recoveryPem = path.join(__dirname, '../../../../certs/private_recovery.pem')
+    const recoverySecret = await fs.readFile(recoveryPem, 'utf-8')
+    const recoveryToken = jwt.sign(recoveryPayload, recoverySecret, { expiresIn: '10m', algorithm: 'RS256'})
+
+    const link = `http://localhost/recuperar?token=${recoveryToken}`
+
+    let info = {
+      from: 'Notitas', // sender address
+      to: `${usuario.correo}`, // list of receivers
+      subject: 'Correo de recuperación de contraseña', // Subject line
+      html: `<b>Recupere su contraseña ingresando al siguiente link</b><br /><a href="${link}">Recovery</a>`, // html body
+    }
+
+    const respuesta = await fetch('http://notitas_email:3000/api/v1/correo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(info)
+    })
+
+    if (!respuesta.ok) {
+      throw boom.badImplementation('Error al enviar el correo de recuperación de contraseña')
+    }
+
+    await service.update(usuario.id, { recoveryToken })
+
+    const data = await respuesta.json()
+
+    return data
+  }
+
+  async changePassword(token, newPassword) {
     try {
       const client = jwksClient({
         jwksUri: config.JWKS_RECOVERY_URI,

@@ -6,11 +6,9 @@ import { config } from '../../../config/config.js'
 import { validatorHandler } from '../../../middlewares/validator.handler.js'
 import { loginSchema, registroSchema, recoverySchema, changePasswordSchema } from './schema.js'
 import { AuthService } from './service.js'
-import { CorreoService } from '../../../services/correo.js'
 
 const router = express.Router()
 const service = new AuthService()
-const correoService = new CorreoService()
 
 router.post('/login', validatorHandler(loginSchema, 'body'), passport.authenticate('local', { session: false }), async (req, res, next) => {
   try {
@@ -90,7 +88,7 @@ router.post('/registro', validatorHandler(registroSchema, 'body'), async (req, r
 router.post('/recuperar', validatorHandler(recoverySchema, 'body'), async (req, res, next) => {
   try {
     const { correo } = req.body
-    const respuesta = await correoService.sendRecovery(correo)
+    const respuesta = await service.sendRecovery(correo)
     res.json(respuesta)
   } catch (error) {
     next(error)

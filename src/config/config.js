@@ -17,13 +17,7 @@ const config = {
   JWKS_RECOVERY_URI: process.env.JWKS_RECOVERY_URI || 'http://localhost:3000/public/.well-known/jwks_recovery.json',
 
   VENCIMIENTO_ACCESS_TOKEN_MINUTOS: process.env.VENCIMIENTO_ACCESS_TOKEN_MINUTOS || 15,
-  VENCIMIENTO_REFRESH_TOKEN_DIAS: process.env.VENCIMIENTO_REFRESH_TOKEN_DIAS || 15,
-
-  EMAIL_SERVER: process.env.EMAIL_SERVER,
-  EMAIL_PORT: process.env.EMAIL_PORT,
-  EMAIL_SECURE: process.env.EMAIL_SECURE,
-  EMAIL_USER: process.env.EMAIL_USER,
-  EMAIL_PASS: process.env.EMAIL_PASS
+  VENCIMIENTO_REFRESH_TOKEN_DIAS: process.env.VENCIMIENTO_REFRESH_TOKEN_DIAS || 15
 }
 
 export { config }

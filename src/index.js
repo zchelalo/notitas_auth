@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 app.use('/public', express.static(path.join(__dirname, 'public')))
 
-const whitelist = ['chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld', 'http://notitas_back']
+const whitelist = ['chrome-extension://amknoiejhlmhancpahfcfcfhllgkpbld', 'http://notitas_back', 'http://localhost:5173']
 const options = {
   origin: (origin, callback) => {
     if (whitelist.includes(origin) || !origin) {
@@ -30,7 +30,8 @@ const options = {
     } else {
       callback(new Error('no permitido'))
     }
-  }
+  },
+  credentials: true
 }
 app.use(cors(options))
 
