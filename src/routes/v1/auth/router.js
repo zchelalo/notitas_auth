@@ -77,9 +77,20 @@ router.post('/registro', validatorHandler(registroSchema, 'body'), async (req, r
     const { nombre, correo, password } = req.body
     const usuario = await service.registroUsuario(nombre, correo, password)
 
-    const token = await service.signToken(usuario)
+    const data = await service.signToken(usuario)
 
-    res.status(201).json(token)
+    const expires = new Date(Date.now() + parseInt(config.VENCIMIENTO_REFRESH_TOKEN_DIAS) * 24 * 60 * 60 * 1000)
+    res.cookie('refreshToken', data.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'Strict',
+      expires: expires
+    })
+
+    res.status(201).json({
+      token: data.accessToken,
+      nombre: data.nombre
+    })
   } catch (error) {
     next(error)
   }
